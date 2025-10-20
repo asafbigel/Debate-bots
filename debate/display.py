@@ -1,12 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import Protocol
+from typing import List, Optional, Protocol
 import sys
 
 TURN_SEPARATOR = "---DEBATE_TURN_SEPARATOR---"
 
 
+from typing import List, Protocol
+
+
 class DisplayStrategy(Protocol):
     def show(self, text: str, title: str = "תוצאה") -> None:
+        ...
+
+    def get_user_selection(self, options: List[str], prompt: str) -> Optional[str]:
         ...
 
 
@@ -15,6 +21,21 @@ class ConsoleDisplay:
         print(title)
         print("=" * len(title))
         print(text)
+
+    def get_user_selection(self, options: List[str], prompt: str) -> Optional[str]:
+        print(prompt)
+        for i, option in enumerate(options):
+            print(f"{i + 1}. {option}")
+        while True:
+            try:
+                choice = input("בחר נושא לדיבייט (הכנס מספר): ")
+                index = int(choice) - 1
+                if 0 <= index < len(options):
+                    return options[index]
+                else:
+                    print("בחירה לא חוקית. נסה שוב.")
+            except ValueError:
+                print("קלט לא חוקי. אנא הכנס מספר.")
 
 
 def _has_pyqt() -> bool:
@@ -131,3 +152,73 @@ class GUIDisplay:
         text_area.configure(state='disabled')
         root.resizable(True, True)
         root.mainloop()
+
+    def get_user_selection(self, options: List[str], prompt: str) -> Optional[str]:
+        if self._pyqt_available:
+            return self._get_user_selection_pyqt(options, prompt)
+        else:
+            return self._get_user_selection_tk(options, prompt)
+
+    def _get_user_selection_pyqt(self, options: List[str], prompt: str) -> Optional[str]:
+        from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QListWidget, QPushButton, QDialog
+        from PyQt5.QtCore import Qt
+        import sys as _sys
+
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication(_sys.argv)
+
+        dialog = QDialog()
+        dialog.setWindowTitle("בחירת נושא דיבייט")
+        layout = QVBoxLayout()
+
+        label = QLabel(prompt)
+        label.setAlignment(Qt.AlignRight)
+        layout.addWidget(label)
+
+        list_widget = QListWidget()
+        list_widget.setLayoutDirection(Qt.RightToLeft)
+        for i, option in enumerate(options):
+            list_widget.addItem(f"{i + 1}. {option}")
+        layout.addWidget(list_widget)
+
+        select_button = QPushButton("בחר")
+        select_button.clicked.connect(dialog.accept)
+        layout.addWidget(select_button)
+
+        dialog.setLayout(layout)
+        
+        if dialog.exec_() == QDialog.Accepted:
+            selected_items = list_widget.selectedItems()
+            if selected_items:
+                selected_text = selected_items[0].text()
+                # Extract the topic text by removing the numbering
+                return ". ".join(selected_text.split(". ")[1:])
+        return None
+
+    def _get_user_selection_tk(self, options: List[str], prompt: str) -> Optional[str]:
+        import tkinter as tk
+        from tkinter import simpledialog, messagebox
+
+        class SelectionDialog(simpledialog.Dialog):
+            def body(self, master):
+                tk.Label(master, text=prompt).pack()
+                self.listbox = tk.Listbox(master)
+                for i, option in enumerate(options):
+                    self.listbox.insert(tk.END, f"{i + 1}. {option}")
+                self.listbox.pack()
+                return self.listbox # initial focus
+
+            def apply(self):
+                selection_index = self.listbox.curselection()
+                if selection_index:
+                    selected_text = self.listbox.get(selection_index[0])
+                    self.result = ". ".join(selected_text.split(". ")[1:])
+                else:
+                    self.result = None
+
+        root = tk.Tk()
+        root.withdraw() # Hide the main window
+        dialog = SelectionDialog(root, "בחירת נושא דיבייט")
+        root.destroy() # Destroy the hidden main window
+        return dialog.result

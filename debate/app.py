@@ -49,13 +49,22 @@ def run_app(gui: bool = True, rounds: int = 5):
     # Reuse the model to query for a subject
     messages = [
         {"role": "system", "content": "אתה מומחה לנושאים פוליטיים וחברתיים בישראל."},
-        {"role": "user", "content": "נסח שאלה אחת בלבד, אקטואלית ומשמעותית, שתשמש לנושא דיבייט בין ימין לשמאל בישראל."},
+        {"role": "user", "content": "נסח 3-5 שאלות אקטואליות ומשמעותיות, שכל אחת מהן יכולה לשמש כנושא דיבייט בין ימין לשמאל בישראל. הצג כל שאלה ברשימה ממוספרת."},
     ]
 
     try:
         response = components["llm"].completion(model=None, messages=messages)
-        # replicate small extractor
-        subject_text = response["choices"][0].message.content
+        topics_raw = response["choices"][0].message.content
+        topics = [line.strip() for line in topics_raw.split('\n') if line.strip() and line[0].isdigit()]
+        
+        if not topics:
+            subject_text = "נושא הדיבייט לא הוגדר עקב שגיאה."
+        else:
+            subject_text = display.get_user_selection(topics, "בחר נושא לדיבייט:")
+            if not subject_text:
+                subject_text = "נושא הדיבייט לא נבחר, מתחיל עם נושא ברירת מחדל." # Fallback if user cancels
+                print("User cancelled topic selection. Starting with a default topic.")
+                subject_text = topics[0] # Use the first topic as default if user cancels
     except Exception:
         subject_text = "נושא הדיבייט לא הוגדר עקב שגיאה."
 
