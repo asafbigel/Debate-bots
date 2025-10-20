@@ -59,14 +59,30 @@ class GUIDisplay:
         text_edit.setLayoutDirection(Qt.RightToLeft)
         text_edit.setAlignment(Qt.AlignRight)
 
-        # Basic split using TURN_SEPARATOR
+        # Enhanced split and formatting using TURN_SEPARATOR
         blocks = text.split(TURN_SEPARATOR)
         for i, block in enumerate(blocks):
             if not block.strip():
                 continue
-            text_edit.append(block)
+            
+            # Assuming block starts with "Speaker: Content"
+            if ":" in block:
+                speaker, content = block.split(":", 1)
+                # Assign colors based on speaker, e.g., "ימין" (Right) and "שמאל" (Left)
+                if "ימין" in speaker:
+                    speaker_color = "blue"
+                elif "שמאל" in speaker:
+                    speaker_color = "red"
+                else:
+                    speaker_color = "black" # Default color
+
+                formatted_block = f"<p><strong style='color:{speaker_color};'>{speaker}:</strong>{content}</p>"
+            else:
+                formatted_block = f"<p>{block}</p>" # Fallback for unexpected format
+
+            text_edit.append(formatted_block)
             if i < len(blocks) - 1:
-                text_edit.append("\n" + ("-" * 40) + "\n")
+                text_edit.append("<hr>") # Horizontal rule as a separator
 
         layout.addWidget(text_edit)
         btn = QPushButton("סגור")
@@ -86,13 +102,31 @@ class GUIDisplay:
         mono_font = tkfont.Font(family="Consolas", size=14)
         text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, font=mono_font, width=90, height=28)
         text_area.pack(expand=True, fill='both')
+
+        text_area.tag_config('right', foreground='blue', font=(mono_font.cget('family'), mono_font.cget('size'), 'bold'))
+        text_area.tag_config('left', foreground='red', font=(mono_font.cget('family'), mono_font.cget('size'), 'bold'))
+        text_area.tag_config('separator', foreground='gray', font=(mono_font.cget('family'), mono_font.cget('size'), 'normal'))
+
         blocks = text.split(TURN_SEPARATOR)
         for i, block in enumerate(blocks):
             if not block.strip():
                 continue
-            text_area.insert(tk.END, block + '\n')
+            
+            if ":" in block:
+                speaker, content = block.split(":", 1)
+                if "ימין" in speaker:
+                    text_area.insert(tk.END, speaker + ":", 'right')
+                    text_area.insert(tk.END, content + '\n')
+                elif "שמאל" in speaker:
+                    text_area.insert(tk.END, speaker + ":", 'left')
+                    text_area.insert(tk.END, content + '\n')
+                else:
+                    text_area.insert(tk.END, block + '\n')
+            else:
+                text_area.insert(tk.END, block + '\n')
+
             if i < len(blocks) - 1:
-                text_area.insert(tk.END, '-'*80 + '\n')
+                text_area.insert(tk.END, '-'*80 + '\n', 'separator')
 
         text_area.configure(state='disabled')
         root.resizable(True, True)

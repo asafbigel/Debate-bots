@@ -26,6 +26,8 @@ def test_simulate_basic():
     mock = MockLLM(responses.copy())
     sim = DebateSimulator(llm_client=mock)
     out = sim.simulate("האם צריך?", rounds=3)
-    assert len(out) == 3
-    assert out[0].startswith("ימין:")
-    assert out[1].startswith("שמאל:")
+    # Filter out TURN_SEPARATOR for length assertion
+    filtered_out = [item for item in out if item != "---DEBATE_TURN_SEPARATOR---"]
+    assert len(filtered_out) == 3
+    assert filtered_out[0].startswith("ימין:")
+    assert filtered_out[1].startswith("שמאל:")

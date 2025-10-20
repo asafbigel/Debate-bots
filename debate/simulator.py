@@ -1,6 +1,7 @@
 from typing import List, Protocol
 
 from .llm_adapter import LLMClientProtocol
+from .display import TURN_SEPARATOR
 
 
 GLOBAL_DEBATE_RULES = """
@@ -9,7 +10,7 @@ GLOBAL_DEBATE_RULES = """
 
 כללי הדיבייט הם:
 1.  היצמד לנושא הדיון.
-2.  תגובותיך צריכות להיות תמציתיות וענייניות (עד 2-3 פסקאות).
+2.  תגובותיך צריכות להיות תמציתיות ו Eagious (עד 2-3 פסקאות).
 3.  שמור על טון מכובד אך תקיף. תקוף את הטיעונים, לא את האדם שמולך.
 4.  התגובה שלך חייבת להתייחס ישירות לטיעון האחרון שהציג היריב שלך.
 """
@@ -77,5 +78,7 @@ class DebateSimulator:
             debate_history_for_llm.append({"role": "user", "content": user_prompt})
             debate_history_for_llm.append({"role": "assistant", "content": response_content})
             debate_display_history.append(f"{current_speaker_role}: {response_content}")
+            if i < rounds - 1:
+                debate_display_history.append(TURN_SEPARATOR)
 
         return debate_display_history
