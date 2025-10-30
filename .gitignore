@@ -1,1 +1,3 @@
 keys.json
+/.venv/
+/debate/__pycache__/
